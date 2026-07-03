@@ -14,8 +14,6 @@ class Patient extends Model
 {
     use HasFactory, HasUlidRouteBinding, SoftDeletes;
 
-    protected string $routeKeyName = 'ulid';
-
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class);

@@ -15,8 +15,6 @@ class Doctor extends Model
 {
     use HasFactory, HasUlidRouteBinding, SoftDeletes;
 
-    protected string $routeKeyName = 'ulid';
-
     protected function casts(): array
     {
         return [
