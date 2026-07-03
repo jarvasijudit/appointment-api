@@ -13,8 +13,6 @@ class Availability extends Model
 {
     use HasFactory, HasUlidRouteBinding;
 
-    protected string $routeKeyName = 'ulid';
-
     protected function casts(): array
     {
         return [
