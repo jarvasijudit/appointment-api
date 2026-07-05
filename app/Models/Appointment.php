@@ -25,11 +25,17 @@ class Appointment extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Patient, $this>
+     */
     public function patient(): BelongsTo
     {
         return $this->belongsTo(Patient::class);
     }
 
+    /**
+     * @return BelongsTo<Doctor, $this>
+     */
     public function doctor(): BelongsTo
     {
         return $this->belongsTo(Doctor::class);
