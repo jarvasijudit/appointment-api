@@ -67,7 +67,7 @@ test('store rejects a duplicate email', function () {
 test('update updates a patient', function () {
     $patient = Patient::factory()->create();
 
-    $response = $this->putJson("/api/patients/{$patient->ulid}", [
+    $response = $this->patchJson("/api/patients/{$patient->ulid}", [
         'name' => 'Updated Name',
     ]);
 
@@ -82,7 +82,7 @@ test('update updates a patient', function () {
 test('update allows keeping the patient\'s own email', function () {
     $patient = Patient::factory()->create();
 
-    $response = $this->putJson("/api/patients/{$patient->ulid}", [
+    $response = $this->patchJson("/api/patients/{$patient->ulid}", [
         'email' => $patient->email,
     ]);
 
@@ -93,7 +93,7 @@ test('update rejects a duplicate email', function () {
     $patient = Patient::factory()->create();
     $otherPatient = Patient::factory()->create();
 
-    $response = $this->putJson("/api/patients/{$patient->ulid}", [
+    $response = $this->patchJson("/api/patients/{$patient->ulid}", [
         'email' => $otherPatient->email,
     ]);
 
@@ -102,7 +102,7 @@ test('update rejects a duplicate email', function () {
 });
 
 test('update returns 404 for a non-existent patient', function () {
-    $response = $this->putJson('/api/patients/does-not-exist', [
+    $response = $this->patchJson('/api/patients/does-not-exist', [
         'name' => 'Updated Name',
     ]);
 

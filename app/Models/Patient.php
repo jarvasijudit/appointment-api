@@ -14,6 +14,9 @@ class Patient extends Model
 {
     use HasFactory, HasUlidRouteBinding, SoftDeletes;
 
+    /**
+     * @return HasMany<Appointment, $this>
+     */
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class);
