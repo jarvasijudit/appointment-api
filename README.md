@@ -60,8 +60,9 @@ php artisan serve
 
 The API will be available at:
 ```
-http://localhost:8000/api
+http://localhost:8000/api/*
 ```
+Example: http://localhost:8000/api/doctors
 
 ## Running Tests
 ```
