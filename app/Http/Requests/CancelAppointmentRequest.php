@@ -23,7 +23,7 @@ class CancelAppointmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'cancellation_reason' => ['sometimes', 'string'],
+            'cancellation_reason' => ['sometimes', 'string', 'max:255'],
         ];
     }
 }
