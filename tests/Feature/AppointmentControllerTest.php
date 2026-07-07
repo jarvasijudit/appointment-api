@@ -356,8 +356,8 @@ test('cancel rejects an invalid transition from a completed appointment', functi
     $response->assertJsonValidationErrors(['state']);
 });
 
-test('cancel rejects an appointment starting in less than 24 hours', function () {
-    $appointment = Appointment::factory()->create([
+test('cancel rejects a confirmed appointment starting in less than 24 hours', function () {
+    $appointment = Appointment::factory()->confirmed()->create([
         'starts_at' => now()->addHours(12),
         'ends_at' => now()->addHours(12)->addMinutes(30),
     ]);
@@ -370,14 +370,28 @@ test('cancel rejects an appointment starting in less than 24 hours', function ()
     $response->assertJsonValidationErrors(['starts_at']);
     $this->assertDatabaseHas('appointments', [
         'id' => $appointment->id,
-        'state' => AppointmentState::Pending,
+        'state' => AppointmentState::Confirmed,
     ]);
 });
 
-test('cancel allows an appointment starting in more than 24 hours', function () {
-    $appointment = Appointment::factory()->create([
+test('cancel allows a confirmed appointment starting in more than 24 hours', function () {
+    $appointment = Appointment::factory()->confirmed()->create([
         'starts_at' => now()->addHours(25),
         'ends_at' => now()->addHours(25)->addMinutes(30),
+    ]);
+
+    $response = $this->postJson("/api/appointments/{$appointment->ulid}/cancel", [
+        'cancellation_reason' => 'Patient requested a reschedule.',
+    ]);
+
+    $response->assertOk();
+    $response->assertJsonPath('data.state', AppointmentState::Cancelled->value);
+});
+
+test('cancel allows a pending appointment starting in less than 24 hours', function () {
+    $appointment = Appointment::factory()->create([
+        'starts_at' => now()->addHours(12),
+        'ends_at' => now()->addHours(12)->addMinutes(30),
     ]);
 
     $response = $this->postJson("/api/appointments/{$appointment->ulid}/cancel", [
