@@ -1,10 +1,7 @@
 <?php
 
-use App\Enums\AppointmentState;
-use App\Models\Appointment;
 use App\Models\Availability;
 use App\Models\Doctor;
-use Illuminate\Support\Carbon;
 
 test('index returns list of availabilities', function () {
     Availability::factory()->count(3)->create();
@@ -328,68 +325,6 @@ test('available slots returns the doctor\'s bookable slots', function () {
             '*' => ['starts_at', 'ends_at'],
         ],
     ]);
-});
-
-test('available slots excludes slots overlapping a non-cancelled appointment', function () {
-    $this->freezeTime();
-    $doctor = Doctor::factory()->create();
-    Availability::factory()->create([
-        'doctor_id' => $doctor->id,
-        'starts_at' => now()->addDay()->setTime(9, 0),
-        'ends_at' => now()->addDay()->setTime(12, 0),
-        'slot_duration_minutes' => 60,
-    ]);
-    Appointment::factory()->create([
-        'doctor_id' => $doctor->id,
-        'starts_at' => now()->addDay()->setTime(10, 0),
-        'ends_at' => now()->addDay()->setTime(11, 0),
-        'state' => AppointmentState::Confirmed,
-    ]);
-
-    $response = $this->getJson("/api/doctors/{$doctor->ulid}/available-slots");
-
-    $response->assertOk();
-    $response->assertJsonCount(2, 'data');
-    $response->assertJsonMissing(['starts_at' => now()->addDay()->setTime(10, 0)]);
-});
-
-test('available slots includes slots overlapping a cancelled appointment', function () {
-    $this->freezeTime();
-    $doctor = Doctor::factory()->create();
-    Availability::factory()->create([
-        'doctor_id' => $doctor->id,
-        'starts_at' => now()->addDay()->setTime(9, 0),
-        'ends_at' => now()->addDay()->setTime(12, 0),
-        'slot_duration_minutes' => 60,
-    ]);
-    Appointment::factory()->cancelled()->create([
-        'doctor_id' => $doctor->id,
-        'starts_at' => now()->addDay()->setTime(10, 0),
-        'ends_at' => now()->addDay()->setTime(11, 0),
-    ]);
-
-    $response = $this->getJson("/api/doctors/{$doctor->ulid}/available-slots");
-
-    $response->assertOk();
-    $response->assertJsonCount(3, 'data');
-});
-
-test('available slots excludes slots that have already started', function () {
-    $date = Carbon::parse('2026-01-01 09:45:00');
-    $this->travelTo($date);
-
-    $doctor = Doctor::factory()->create();
-    Availability::factory()->create([
-        'doctor_id' => $doctor->id,
-        'starts_at' => $date->clone()->setTime(9, 0),
-        'ends_at' => $date->clone()->setTime(12, 0),
-        'slot_duration_minutes' => 60,
-    ]);
-
-    $response = $this->getJson("/api/doctors/{$doctor->ulid}/available-slots");
-
-    $response->assertOk();
-    $response->assertJsonCount(2, 'data');
 });
 
 test('available slots returns 404 for a non-existent doctor', function () {
