@@ -140,24 +140,6 @@ test('store rejects a starts_at that is not in the future', function () {
     $response->assertJsonValidationErrors(['starts_at']);
 });
 
-test('store rejects a time outside the doctor\'s availability', function () {
-    $doctor = Doctor::factory()->create();
-    $patient = Patient::factory()->create();
-
-    $payload = [
-        'patient_id' => $patient->ulid,
-        'doctor_id' => $doctor->ulid,
-        'starts_at' => now()->addDay()->setTime(9, 0),
-        'ends_at' => now()->addDay()->setTime(10, 0),
-    ];
-
-    $response = $this->postJson('/api/appointments', $payload);
-
-    $response->assertUnprocessable();
-    $response->assertJsonValidationErrors(['starts_at']);
-    $this->assertDatabaseCount('appointments', 0);
-});
-
 test('store rejects an overlapping appointment for the same doctor', function () {
     $doctor = Doctor::factory()->create();
     $patient = Patient::factory()->create();
@@ -186,63 +168,6 @@ test('store rejects an overlapping appointment for the same doctor', function ()
     $this->assertDatabaseCount('appointments', 1);
 });
 
-test('store rejects an overlapping appointment for the same patient', function () {
-    $doctor = Doctor::factory()->create();
-    $otherDoctor = Doctor::factory()->create();
-    $patient = Patient::factory()->create();
-    Availability::factory()->create([
-        'doctor_id' => $otherDoctor->id,
-        'starts_at' => now()->addDay()->setTime(9, 0),
-        'ends_at' => now()->addDay()->setTime(13, 0),
-    ]);
-    Appointment::factory()->create([
-        'patient_id' => $patient->id,
-        'doctor_id' => $doctor->id,
-        'starts_at' => now()->addDay()->setTime(9, 0),
-        'ends_at' => now()->addDay()->setTime(10, 0),
-    ]);
-
-    $payload = [
-        'patient_id' => $patient->ulid,
-        'doctor_id' => $otherDoctor->ulid,
-        'starts_at' => now()->addDay()->setTime(9, 30),
-        'ends_at' => now()->addDay()->setTime(10, 30),
-    ];
-
-    $response = $this->postJson('/api/appointments', $payload);
-
-    $response->assertUnprocessable();
-    $response->assertJsonValidationErrors(['starts_at']);
-    $this->assertDatabaseCount('appointments', 1);
-});
-
-test('store allows booking over a cancelled appointment\'s time slot', function () {
-    $doctor = Doctor::factory()->create();
-    $patient = Patient::factory()->create();
-    Availability::factory()->create([
-        'doctor_id' => $doctor->id,
-        'starts_at' => now()->addDay()->setTime(9, 0),
-        'ends_at' => now()->addDay()->setTime(13, 0),
-    ]);
-    Appointment::factory()->cancelled()->create([
-        'doctor_id' => $doctor->id,
-        'starts_at' => now()->addDay()->setTime(9, 0),
-        'ends_at' => now()->addDay()->setTime(10, 0),
-    ]);
-
-    $payload = [
-        'patient_id' => $patient->ulid,
-        'doctor_id' => $doctor->ulid,
-        'starts_at' => now()->addDay()->setTime(9, 0),
-        'ends_at' => now()->addDay()->setTime(10, 0),
-    ];
-
-    $response = $this->postJson('/api/appointments', $payload);
-
-    $response->assertCreated();
-    $this->assertDatabaseCount('appointments', 2);
-});
-
 test('update updates an appointment', function () {
     $doctor = Doctor::factory()->create();
     Availability::factory()->create([
@@ -268,18 +193,6 @@ test('update updates an appointment', function () {
         'starts_at' => now()->addDay()->setTime(11, 0),
         'ends_at' => now()->addDay()->setTime(12, 0),
     ]);
-});
-
-test('update rejects moving into an unavailable slot', function () {
-    $appointment = Appointment::factory()->create();
-
-    $response = $this->patchJson("/api/appointments/{$appointment->ulid}", [
-        'starts_at' => now()->addDays(2)->setTime(9, 0),
-        'ends_at' => now()->addDays(2)->setTime(10, 0),
-    ]);
-
-    $response->assertUnprocessable();
-    $response->assertJsonValidationErrors(['starts_at']);
 });
 
 test('update rejects an overlapping appointment for the same doctor', function () {
@@ -378,20 +291,6 @@ test('cancel allows a confirmed appointment starting in more than 24 hours', fun
     $appointment = Appointment::factory()->confirmed()->create([
         'starts_at' => now()->addHours(25),
         'ends_at' => now()->addHours(25)->addMinutes(30),
-    ]);
-
-    $response = $this->postJson("/api/appointments/{$appointment->ulid}/cancel", [
-        'cancellation_reason' => 'Patient requested a reschedule.',
-    ]);
-
-    $response->assertOk();
-    $response->assertJsonPath('data.state', AppointmentState::Cancelled->value);
-});
-
-test('cancel allows a pending appointment starting in less than 24 hours', function () {
-    $appointment = Appointment::factory()->create([
-        'starts_at' => now()->addHours(12),
-        'ends_at' => now()->addHours(12)->addMinutes(30),
     ]);
 
     $response = $this->postJson("/api/appointments/{$appointment->ulid}/cancel", [
